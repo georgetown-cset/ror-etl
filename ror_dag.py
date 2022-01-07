@@ -19,7 +19,7 @@ from datetime import timedelta, datetime
 
 from dataloader.airflow_utils.slack import task_fail_slack_alert
 from dataloader.scripts.populate_documentation import update_table_descriptions
-from ror_scripts import fetch
+from ror_scripts.fetch import fetch
 
 
 default_args = {
