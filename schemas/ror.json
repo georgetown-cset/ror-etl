@@ -244,6 +244,23 @@
         "mode": "NULLABLE",
         "name": "LinkedIn",
         "type": "RECORD"
+      },
+      {
+        "fields": [
+          {
+            "mode": "REPEATED",
+            "name": "all",
+            "type": "STRING"
+          },
+          {
+            "mode": "NULLABLE",
+            "name": "preferred",
+            "type": "INTEGER"
+          }
+        ],
+        "mode": "NULLABLE",
+        "name": "Ringgold",
+        "type": "RECORD"
       }
     ],
     "mode": "NULLABLE",
