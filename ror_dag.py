@@ -74,7 +74,7 @@ with DAG("ror_updater",
         bucket=bucket,
         source_objects=[json_loc],
         schema_object=f"{schema_dir}/ror.json",
-        destination_project_dataset_table=f"{staging_dataset}.all_metadata_norm",
+        destination_project_dataset_table=f"{staging_dataset}.ror",
         source_format="NEWLINE_DELIMITED_JSON",
         create_disposition="CREATE_IF_NEEDED",
         write_disposition="WRITE_TRUNCATE"
