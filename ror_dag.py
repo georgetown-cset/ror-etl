@@ -142,4 +142,4 @@ with DAG("ror_updater",
         username="airflow"
     )
 
-    clear_tmp_dir >> fetch >> load_staging >> checks >> load_production >> backup >> success_alert
+    clear_tmp_dir >> fetch >> load_staging >> checks >> load_production >> pop_descriptions >> backup >> success_alert
