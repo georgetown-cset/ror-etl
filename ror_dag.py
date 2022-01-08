@@ -58,7 +58,7 @@ with DAG("ror_updater",
     )
 
     # Retrieve and expand the data
-    json_loc = tmp_dir+"/ror.json"
+    json_loc = tmp_dir+"/ror.jsonl"
     fetch = PythonOperator(
         task_id="fetch",
         op_kwargs={
