@@ -289,7 +289,7 @@
             {
                 "mode": "NULLABLE",
                 "name": "postcode",
-                "type": "INTEGER"
+                "type": "STRING"
             },
             {
                 "mode": "NULLABLE",
@@ -308,7 +308,7 @@
                     {
                         "mode": "REPEATED",
                         "name": "all",
-                        "type": "INTEGER"
+                        "type": "STRING"
                     },
                     {
                         "mode": "NULLABLE",
@@ -342,7 +342,7 @@
                     {
                         "mode": "REPEATED",
                         "name": "all",
-                        "type": "INTEGER"
+                        "type": "STRING"
                     },
                     {
                         "mode": "NULLABLE",
@@ -393,12 +393,12 @@
                     {
                         "mode": "REPEATED",
                         "name": "all",
-                        "type": "INTEGER"
+                        "type": "STRING"
                     },
                     {
                         "mode": "NULLABLE",
                         "name": "preferred",
-                        "type": "INTEGER"
+                        "type": "STRING"
                     }
                 ],
                 "mode": "NULLABLE",
@@ -427,16 +427,33 @@
                     {
                         "mode": "REPEATED",
                         "name": "all",
-                        "type": "INTEGER"
+                        "type": "STRING"
                     },
                     {
                         "mode": "NULLABLE",
                         "name": "preferred",
-                        "type": "INTEGER"
+                        "type": "STRING"
                     }
                 ],
                 "mode": "NULLABLE",
                 "name": "OrgRef",
+                "type": "RECORD"
+            },
+            {
+                "fields": [
+                    {
+                        "mode": "REPEATED",
+                        "name": "all",
+                        "type": "STRING"
+                    },
+                    {
+                        "mode": "NULLABLE",
+                        "name": "preferred",
+                        "type": "STRING"
+                    }
+                ],
+                "mode": "NULLABLE",
+                "name": "CNRS",
                 "type": "RECORD"
             }
         ],
