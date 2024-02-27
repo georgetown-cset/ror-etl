@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import requests
@@ -38,3 +39,12 @@ def fetch(output_bucket: str, output_loc: str) -> None:
         bucket = storage_client.bucket(output_bucket)
         blob = bucket.blob(output_loc)
         blob.upload_from_filename(output_file)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output_bucket", help="GCS bucket where data should be written", required=True)
+    parser.add_argument("--output_loc", help="Blob name where data shuld be written", required=True)
+    args = parser.parse_args()
+
+    fetch(args.output_bucket, args.output_loc)
