@@ -1,19 +1,25 @@
 import json
+from datetime import datetime
 
 from airflow import DAG
-from airflow.providers.google.cloud.operators.bigquery import BigQueryInsertJobOperator, BigQueryCheckOperator
-from airflow.providers.google.cloud.transfers.bigquery_to_bigquery import BigQueryToBigQueryOperator
+from airflow.operators.python import PythonOperator
+from airflow.providers.google.cloud.operators.bigquery import (
+    BigQueryCheckOperator,
+    BigQueryInsertJobOperator,
+)
 from airflow.providers.google.cloud.operators.gcs import GCSDeleteObjectsOperator
-from airflow.providers.google.cloud.transfers.gcs_to_bigquery import GCSToBigQueryOperator
 from airflow.providers.google.cloud.operators.kubernetes_engine import (
     GKEStartPodOperator,
 )
-from airflow.operators.python import PythonOperator
-from datetime import datetime
-
+from airflow.providers.google.cloud.transfers.bigquery_to_bigquery import (
+    BigQueryToBigQueryOperator,
+)
+from airflow.providers.google.cloud.transfers.gcs_to_bigquery import (
+    GCSToBigQueryOperator,
+)
 from dataloader.airflow_utils.defaults import (
-    DATA_BUCKET,
     DAGS_DIR,
+    DATA_BUCKET,
     GCP_ZONE,
     PROJECT_ID,
     get_default_args,
@@ -21,37 +27,35 @@ from dataloader.airflow_utils.defaults import (
 )
 from dataloader.scripts.populate_documentation import update_table_descriptions
 
-
 args = get_default_args(pocs=["Jennifer"])
 args["retries"] = 1
 args["on_failure_callback"] = None
 
 
-with DAG("ror_updater",
-            default_args=args,
-            description="Links articles across our scholarly lit holdings.",
-            schedule_interval="0 0 * * 5",
-            catchup=False
-         ) as dag:
+with DAG(
+    "ror_updater",
+    default_args=args,
+    description="Links articles across our scholarly lit holdings.",
+    schedule_interval="0 0 * * 5",
+    catchup=False,
+) as dag:
     gcs_folder = "ror"
     tmp_dir = f"{gcs_folder}/tmp"
     raw_data_dir = f"{gcs_folder}/data"
     schema_dir = f"{gcs_folder}/schemas"
     sql_dir = f"sql/{gcs_folder}"
     production_dataset = "gcp_cset_ror"
-    staging_dataset = "staging_"+production_dataset
-    backup_dataset = production_dataset+"_backups"
+    staging_dataset = "staging_" + production_dataset
+    backup_dataset = production_dataset + "_backups"
 
     # We keep several intermediate outputs in a tmp dir on gcs, so clean it out at the start of each run. We clean at
     # the start of the run so if the run fails we can examine the failed data
     clear_tmp_dir = GCSDeleteObjectsOperator(
-        task_id="clear_tmp_gcs_dir",
-        bucket_name=DATA_BUCKET,
-        prefix=tmp_dir + "/"
+        task_id="clear_tmp_gcs_dir", bucket_name=DATA_BUCKET, prefix=tmp_dir + "/"
     )
 
     # Retrieve and expand the data
-    json_loc = tmp_dir+"/ror.jsonl"
+    json_loc = tmp_dir + "/ror.jsonl"
     working_dir = "ror_working_dir"
     setup_commands = f"rm -rf {working_dir};" + " && ".join(
         [
@@ -113,7 +117,7 @@ with DAG("ror_updater",
         destination_project_dataset_table=f"{staging_dataset}.ror",
         source_format="NEWLINE_DELIMITED_JSON",
         create_disposition="CREATE_IF_NEEDED",
-        write_disposition="WRITE_TRUNCATE"
+        write_disposition="WRITE_TRUNCATE",
     )
 
     # Check that the number of ids is >= what we have in production and that the ids are unique
@@ -121,23 +125,25 @@ with DAG("ror_updater",
         BigQueryCheckOperator(
             task_id="check_unique_ids",
             sql=(f"select count(distinct(id)) = count(id) from {staging_dataset}.ror"),
-            use_legacy_sql=False
+            use_legacy_sql=False,
         ),
         BigQueryCheckOperator(
             task_id="check_monotonic_increase",
-            sql=(f"select (select count(0) from {staging_dataset}.ror) >= "
-                 f"(select count(0) from {production_dataset}.ror)"),
-            use_legacy_sql=False
-        )
+            sql=(
+                f"select (select count(0) from {staging_dataset}.ror) >= "
+                f"(select count(0) from {production_dataset}.ror)"
+            ),
+            use_legacy_sql=False,
+        ),
     ]
 
     # Load into production
     load_production = BigQueryToBigQueryOperator(
-        task_id=f"load_production",
+        task_id="load_production",
         source_project_dataset_tables=[f"{staging_dataset}.ror"],
         destination_project_dataset_table=f"{production_dataset}.ror",
         create_disposition="CREATE_IF_NEEDED",
-        write_disposition="WRITE_TRUNCATE"
+        write_disposition="WRITE_TRUNCATE",
     )
 
     # Update descriptions
@@ -148,23 +154,31 @@ with DAG("ror_updater",
         op_kwargs={
             "input_schema": f"{DAGS_DIR}/schemas/{gcs_folder}/ror.json",
             "table_name": f"{production_dataset}.ror",
-            "table_description": table_desc["ror"]
+            "table_description": table_desc["ror"],
         },
-        python_callable=update_table_descriptions
+        python_callable=update_table_descriptions,
     )
 
     # Copy to backups
     curr_date = datetime.now().strftime("%Y%m%d")
     backup = BigQueryToBigQueryOperator(
-        task_id=f"snapshot_ror",
+        task_id="snapshot_ror",
         source_project_dataset_tables=[f"{production_dataset}.ror"],
         destination_project_dataset_table=f"{backup_dataset}.ror_{curr_date}",
         create_disposition="CREATE_IF_NEEDED",
-        write_disposition="WRITE_TRUNCATE"
+        write_disposition="WRITE_TRUNCATE",
     )
 
     # Declare victory
     success_alert = get_post_success("ROR update succeeded!", dag)
 
-    (clear_tmp_dir >> download_data >> load_staging >> checks >> load_production >> pop_descriptions >> backup >>
-     success_alert)
+    (
+        clear_tmp_dir
+        >> download_data
+        >> load_staging
+        >> checks
+        >> load_production
+        >> pop_descriptions
+        >> backup
+        >> success_alert
+    )
