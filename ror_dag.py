@@ -20,7 +20,6 @@ from dataloader.airflow_utils.defaults import (
     get_post_success,
 )
 from dataloader.scripts.populate_documentation import update_table_descriptions
-from ror_scripts.fetch import fetch
 
 
 args = get_default_args(pocs=["Jennifer"])
@@ -61,7 +60,7 @@ with DAG("ror_updater",
             f"gsutil -m cp -r gs://{DATA_BUCKET}/{gcs_folder}/scripts/* .",
             "virtualenv venv",
             ". venv/bin/activate",
-            "python3 -m pip install google-cloud-storage zipfile",
+            "python3 -m pip install google-cloud-storage",
         ]
     )
     download_data = GKEStartPodOperator(
