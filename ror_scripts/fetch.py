@@ -1,10 +1,11 @@
+import argparse
 import json
 import os
-import requests
 import tempfile
-
-from google.cloud import storage
 from zipfile import ZipFile
+
+import requests
+from google.cloud import storage
 
 
 def fetch(output_bucket: str, output_loc: str) -> None:
@@ -15,7 +16,9 @@ def fetch(output_bucket: str, output_loc: str) -> None:
     :param output_loc: blob name where data should be written on GCS
     :return: None
     """
-    resp = requests.get("https://zenodo.org/api/records/?communities=ror-data&sort=mostrecent")
+    resp = requests.get(
+        "https://zenodo.org/api/records/?communities=ror-data&sort=mostrecent"
+    )
     dataset_js = resp.json()
     latest_delivery = dataset_js["hits"]["hits"][0]["files"][0]["links"]["self"]
     zip_resp = requests.get(latest_delivery)
@@ -33,8 +36,21 @@ def fetch(output_bucket: str, output_loc: str) -> None:
             js = json.loads(f.read())
             with open(output_file, mode="w") as out:
                 for elt in js:
-                    out.write(json.dumps(elt)+"\n")
+                    out.write(json.dumps(elt) + "\n")
         storage_client = storage.Client()
         bucket = storage_client.bucket(output_bucket)
         blob = bucket.blob(output_loc)
         blob.upload_from_filename(output_file)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--output_bucket", help="GCS bucket where data should be written", required=True
+    )
+    parser.add_argument(
+        "--output_loc", help="Blob name where data shuld be written", required=True
+    )
+    args = parser.parse_args()
+
+    fetch(args.output_bucket, args.output_loc)
