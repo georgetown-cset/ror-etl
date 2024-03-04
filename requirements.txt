@@ -1,0 +1,4 @@
+coverage
+google-cloud-storage
+pre-commit
+pytest

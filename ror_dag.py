@@ -54,7 +54,7 @@ with DAG(
     )
 
     # Retrieve and expand the data
-    json_loc = tmp_dir + "/ror.jsonl"
+    raw_jsonl_loc = tmp_dir + "/ror.jsonl"
     working_dir = "ror_working_dir"
     setup_commands = f"rm -rf {working_dir};" + " && ".join(
         [
@@ -68,7 +68,7 @@ with DAG(
     )
     download_data = GKEStartPodOperator(
         task_id="download_data",
-        name="1790_er_download_data",
+        name="ror-download",
         project_id=PROJECT_ID,
         location=GCP_ZONE,
         cluster_name="cc2-task-pool",
@@ -78,7 +78,49 @@ with DAG(
             "-c",
             (
                 setup_commands
-                + f" && python3 fetch.py --output_bucket '{DATA_BUCKET}' --output_loc '{json_loc}'"
+                + f" && python3 fetch.py --output_bucket '{DATA_BUCKET}' --output_loc '{raw_jsonl_loc}'"
+            ),
+        ],
+        namespace="default",
+        image=f"gcr.io/{PROJECT_ID}/cc2-task-pool",
+        get_logs=True,
+        startup_timeout_seconds=300,
+        on_finish_action="delete_pod",
+        affinity={
+            "nodeAffinity": {
+                "requiredDuringSchedulingIgnoredDuringExecution": {
+                    "nodeSelectorTerms": [
+                        {
+                            "matchExpressions": [
+                                {
+                                    "key": "cloud.google.com/gke-nodepool",
+                                    "operator": "In",
+                                    "values": [
+                                        "default-pool",
+                                    ],
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        },
+    )
+
+    jsonl_with_up = tmp_dir + "ror_json_with_up.jsonl"
+    add_ultimate_parent = GKEStartPodOperator(
+        task_id="add_ultimate_parent",
+        name="ror-ultimate-parent",
+        project_id=PROJECT_ID,
+        location=GCP_ZONE,
+        cluster_name="cc2-task-pool",
+        do_xcom_push=True,
+        cmds=["/bin/bash"],
+        arguments=[
+            "-c",
+            (
+                setup_commands
+                + f" && python3 get_ultimate_parent.py --bucket '{DATA_BUCKET}' --input_loc '{raw_jsonl_loc}' --output_loc '{jsonl_with_up}'"
             ),
         ],
         namespace="default",
@@ -111,7 +153,7 @@ with DAG(
     load_staging = GCSToBigQueryOperator(
         task_id="load_staging",
         bucket=DATA_BUCKET,
-        source_objects=[json_loc],
+        source_objects=[jsonl_with_up],
         schema_object=f"{schema_dir}/ror.json",
         destination_project_dataset_table=f"{staging_dataset}.ror",
         source_format="NEWLINE_DELIMITED_JSON",
@@ -174,6 +216,7 @@ with DAG(
     (
         clear_tmp_dir
         >> download_data
+        >> add_ultimate_parent
         >> load_staging
         >> checks
         >> load_production
