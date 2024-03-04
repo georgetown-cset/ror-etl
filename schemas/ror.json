@@ -460,5 +460,11 @@
         "mode": "NULLABLE",
         "name": "external_ids",
         "type": "RECORD"
+    },
+    {
+        "mode": "REQUIRED",
+        "name": "ultimate_parent",
+        "type": "STRING",
+        "description": "Added by CSET through recursive traversal of `relationship`. The most distant ancestor of this organization."
     }
 ]
