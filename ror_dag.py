@@ -34,7 +34,7 @@ args["retries"] = 1
 with DAG(
     "ror_updater",
     default_args=args,
-    description="Links articles across our scholarly lit holdings.",
+    description="Updates ROR dataset.",
     schedule_interval="0 0 * * 5",
     catchup=False,
 ) as dag:
@@ -149,7 +149,6 @@ with DAG(
         },
     )
 
-    # Load into GCS
     load_staging = GCSToBigQueryOperator(
         task_id="load_staging",
         bucket=DATA_BUCKET,
@@ -178,7 +177,6 @@ with DAG(
         ),
     ]
 
-    # Load into production
     load_production = BigQueryToBigQueryOperator(
         task_id="load_production",
         source_project_dataset_tables=[f"{staging_dataset}.ror"],
@@ -187,7 +185,7 @@ with DAG(
         write_disposition="WRITE_TRUNCATE",
     )
 
-    # Update descriptions
+    # Update column descriptions
     with open(f"{DAGS_DIR}/schemas/{gcs_folder}/table_descriptions.json") as f:
         table_desc = json.loads(f.read())
     pop_descriptions = PythonOperator(
