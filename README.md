@@ -1,2 +1,4 @@
 # ror-etl
-Auto-etl of ROR (https://ror.org)
+Automates ETL of [ROR](https://ror.org) via `ror_dag.py`. 
+
+(CSET users) To update Airflow artifacts, run `bash push_to_airflow.sh`.
