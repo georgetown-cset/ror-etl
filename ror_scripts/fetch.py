@@ -29,7 +29,9 @@ def fetch(output_bucket: str, output_loc: str) -> None:
             f.write(zip_resp.content)
         ZipFile(zip_f).extractall(td)
         print(f"Downloaded content: {os.listdir(td)}")
-        json_files = [js for js in os.listdir(td) if js.endswith(".json")]
+        json_files = [
+            js for js in os.listdir(td) if js.endswith(".json") and ("schema" not in js)
+        ]
         assert len(json_files) == 1
         output_file = os.path.join(td, output_loc.split("/")[-1])
         with open(os.path.join(td, json_files[0])) as f:
