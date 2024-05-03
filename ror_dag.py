@@ -2,6 +2,7 @@ import json
 from datetime import datetime
 
 from airflow import DAG
+from airflow.lineage.entities import File
 from airflow.operators.python import PythonOperator
 from airflow.providers.google.cloud.operators.bigquery import (
     BigQueryCheckOperator,
@@ -66,6 +67,7 @@ with DAG(
             "python3 -m pip install google-cloud-storage",
         ]
     )
+    raw_gcs_lineage_file = File(url=f"gs://{DATA_BUCKET}/{raw_jsonl_loc}")
     download_data = GKEStartPodOperator(
         task_id="download_data",
         name="ror-download",
@@ -81,6 +83,12 @@ with DAG(
                 + f" && python3 fetch.py --output_bucket '{DATA_BUCKET}' --output_loc '{raw_jsonl_loc}'"
             ),
         ],
+        inlets=[
+            File(
+                url="https://zenodo.org/api/records/?communities=ror-data&sort=mostrecent"
+            )
+        ],
+        outlets=[raw_gcs_lineage_file],
         namespace="default",
         image=f"gcr.io/{PROJECT_ID}/cc2-task-pool",
         get_logs=True,
@@ -123,6 +131,8 @@ with DAG(
                 + f" && python3 get_ultimate_parent.py --bucket '{DATA_BUCKET}' --input_loc '{raw_jsonl_loc}' --output_loc '{jsonl_with_up}'"
             ),
         ],
+        inlets=[raw_gcs_lineage_file],
+        outlets=[File(url=f"gs://{DATA_BUCKET}/{jsonl_with_up}")],
         namespace="default",
         image=f"gcr.io/{PROJECT_ID}/cc2-task-pool",
         get_logs=True,
