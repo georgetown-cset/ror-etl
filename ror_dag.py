@@ -115,7 +115,7 @@ with DAG(
         },
     )
 
-    jsonl_with_up = tmp_dir + "ror_json_with_up.jsonl"
+    jsonl_with_up = f"{tmp_dir}/ror_json_with_up.jsonl"
     add_ultimate_parent = GKEStartPodOperator(
         task_id="add_ultimate_parent",
         name="ror-ultimate-parent",
