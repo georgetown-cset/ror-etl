@@ -67,7 +67,7 @@ with DAG(
             "python3 -m pip install google-cloud-storage",
         ]
     )
-    raw_gcs_lineage_file = File(url=f"gs://{DATA_BUCKET}/{raw_jsonl_loc}")
+    raw_gcs_lineage_file = File(url=f"gcs:{DATA_BUCKET}.{raw_jsonl_loc}")
     download_data = GKEStartPodOperator(
         task_id="download_data",
         name="ror-download",
@@ -132,7 +132,7 @@ with DAG(
             ),
         ],
         inlets=[raw_gcs_lineage_file],
-        outlets=[File(url=f"gs://{DATA_BUCKET}/{jsonl_with_up}")],
+        outlets=[File(url=f"gcs:{DATA_BUCKET}.{jsonl_with_up}")],
         namespace="default",
         image=f"gcr.io/{PROJECT_ID}/cc2-task-pool",
         get_logs=True,
