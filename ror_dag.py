@@ -28,7 +28,7 @@ from dataloader.airflow_utils.defaults import (
 )
 from dataloader.scripts.populate_documentation import update_table_descriptions
 
-args = get_default_args(pocs=["Jennifer"])
+args = get_default_args(pocs=["Rebecca"])
 args["retries"] = 1
 
 
