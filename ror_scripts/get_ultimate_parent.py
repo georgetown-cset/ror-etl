@@ -1,12 +1,13 @@
 import argparse
 import json
 import os
+import sys
 import tempfile
 
 from google.cloud import storage
 
-import sys
 sys.setrecursionlimit(200)
+
 
 def traverse_parents(ror_id: str, id_to_parent: dict) -> str:
     """
