@@ -5,6 +5,8 @@ import tempfile
 
 from google.cloud import storage
 
+import sys
+sys.setrecursionlimit(200)
 
 def traverse_parents(ror_id: str, id_to_parent: dict) -> str:
     """
@@ -14,9 +16,14 @@ def traverse_parents(ror_id: str, id_to_parent: dict) -> str:
     :return: Ultimate ancestor of a ror id
     """
     parent = id_to_parent[ror_id]
-    if ror_id == parent:
+    try:
+        if ror_id == parent:
+            return ror_id
+        return traverse_parents(parent, id_to_parent)
+    except RecursionError:
+        # We only know of one org that's currently leading to a recursion error and if we don't get the perfect tree
+        # for a single org not the end of the world
         return ror_id
-    return traverse_parents(parent, id_to_parent)
 
 
 def roll_up(id_to_parent: dict) -> dict:
