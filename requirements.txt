@@ -2,3 +2,5 @@ coverage
 google-cloud-storage
 pre-commit
 pytest
+google-cloud-secret-manager
+slack_sdk

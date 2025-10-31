@@ -4,7 +4,9 @@ import os
 import sys
 import tempfile
 
-from google.cloud import storage
+from google.cloud import storage, secretmanager
+from slack_sdk import WebClient
+
 
 sys.setrecursionlimit(200)
 
@@ -22,6 +24,13 @@ def traverse_parents(ror_id: str, id_to_parent: dict) -> str:
             return ror_id
         return traverse_parents(parent, id_to_parent)
     except RecursionError:
+        secret_client = secretmanager.SecretManagerServiceClient()
+        secret_name = ("projects/gcp-cset-projects/secrets/CSET_data_pipeline_alerts_slack_app_oauth/versions/latest")
+        secret = secret_client.access_secret_version(request={"name": secret_name}).payload.data.decode("ascii")
+        client = WebClient(token=secret)
+        bot_name = "CSET data pipeline alerts"
+        message = f"Recursion error in ROR pipeline: ror_id: {ror_id}, parent: {parent}"
+        client.chat_postMessage(channel="airflow-notifications", text=message, username=bot_name)
         # We only know of one org that's currently leading to a recursion error and if we don't get the perfect tree
         # for a single org not the end of the world
         return ror_id
