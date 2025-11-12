@@ -65,6 +65,8 @@ with DAG(
             "virtualenv venv",
             ". venv/bin/activate",
             "python3 -m pip install google-cloud-storage",
+            "python3 -m pip install google-cloud-secret-manager",
+            "python3 -m pip install slack_sdk",
         ]
     )
     raw_gcs_lineage_file = File(url=f"gs://{DATA_BUCKET}.{raw_jsonl_loc}")
